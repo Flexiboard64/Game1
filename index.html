@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Your number</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 100px;
+            background-color: #f4f4f4;
+        }
+        #ip {
+            font-size: 40px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+<body>
+    <h1>your number..</h1>
+    <div id="ip">Loading...</div>
+
+    <script>
+        fetch("https://api.ipify.org?format=json")
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("ip").textContent = data.ip;
+            })
+            .catch(() => {
+                document.getElementById("ip").textContent = "Unable to make your number :(";
+            });
+    </script>
+</body>
+</html>
