@@ -1,34 +1,13 @@
 <!DOCTYPE html>
-<html>
-<head>
-    <title>Your number</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin-top: 100px;
-            background-color: #f4f4f4;
-        }
-        #ip {
-            font-size: 40px;
-            font-weight: bold;
-            color: #2c3e50;
-        }
-    </style>
-</head>
-<body>
-    <h1>your number..</h1>
-    <div id="ip">Loading...</div>
-
-    <script>
-        fetch("https://api.ipify.org?format=json")
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById("ip").textContent = data.ip;
-            })
-            .catch(() => {
-                document.getElementById("ip").textContent = "Unable to make your number :(";
-            });
-    </script>
-</body>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite App</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/main.js"></script>
+  </body>
 </html>
