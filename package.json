@@ -1,0 +1,24 @@
+{
+  "name": "vallee-des-vents",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "three": "^0.185.0",
+    "three-mesh-bvh": "^0.9.1"
+  },
+  "devDependencies": {
+    "@gltf-transform/core": "^4.4.2",
+    "@gltf-transform/functions": "^4.4.2",
+    "@types/three": "^0.185.0",
+    "playwright-core": "^1.62.0",
+    "typescript": "~5.9.2",
+    "vite": "^7.1.0"
+  }
+}

@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vallée des Vents</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preload" href="/fonts/marcellus-latin-400.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/fonts/nunito-sans-latin-400.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/fonts/mplus-rounded-latin-700.woff2" as="font" type="font/woff2" crossorigin />
+  <style>
+    /* Critique : visible avant l'évaluation du bundle JS — aucun FOUC */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #ffffff; }
+    #app { position: fixed; inset: 0; }
+    #game { width: 100%; height: 100%; display: block; touch-action: none; }
+
+    #loading-screen {
+      position: fixed; inset: 0; z-index: 100;
+      background: #ffffff;
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity 0.45s ease;
+    }
+    #loading-screen.hidden { opacity: 0; pointer-events: none; }
+    .loading-glyphs { display: flex; gap: 34px; }
+    .loading-glyphs svg { width: 46px; height: 46px; display: block; }
+    .glyph-base { stroke: #c9c9c9; }
+    .loading-spinner {
+      position: fixed; right: 46px; bottom: 38px;
+      width: 34px; height: 34px;
+    }
+    .loading-spinner svg { width: 100%; height: 100%; animation: ls-rot 1.6s linear infinite; }
+    .loading-spinner .inner { animation: ls-rot-r 1.1s linear infinite; transform-origin: 50% 50%; }
+    @keyframes ls-rot { to { transform: rotate(360deg); } }
+    @keyframes ls-rot-r { to { transform: rotate(-360deg); } }
+  </style>
+</head>
+<body>
+  <div id="app"><canvas id="game"></canvas></div>
+
+  <div id="loading-screen">
+    <div class="loading-glyphs" aria-label="Chargement">
+      <!-- 7 glyphes d'éléments — dessins line-art originaux.
+           Chaque glyphe : trait gris de base + copie colorée révélée par clipPath (bas → haut). -->
+
+      <!-- Anemo : spirale de vent -->
+      <svg viewBox="0 0 44 44" fill="none" stroke-width="2.2" stroke-linecap="round">
+        <defs><clipPath id="clip-anemo"><rect x="0" y="44" width="44" height="0" /></clipPath></defs>
+        <g class="glyph-base">
+          <path d="M22 34 C13 34 8 28 8 21 C8 13 15 8 22 8 C28 8 33 12 33 18 C33 24 28 27 23 27 C19 27 16 24 16 20" />
+          <path d="M22 34 C30 34 36 29 37 22" />
+        </g>
+        <g class="glyph-fill" clip-path="url(#clip-anemo)" stroke="#74C2A8">
+          <path d="M22 34 C13 34 8 28 8 21 C8 13 15 8 22 8 C28 8 33 12 33 18 C33 24 28 27 23 27 C19 27 16 24 16 20" />
+          <path d="M22 34 C30 34 36 29 37 22" />
+        </g>
+      </svg>
+
+      <!-- Geo : losange facetté -->
+      <svg viewBox="0 0 44 44" fill="none" stroke-width="2.2" stroke-linejoin="round">
+        <defs><clipPath id="clip-geo"><rect x="0" y="44" width="44" height="0" /></clipPath></defs>
+        <g class="glyph-base">
+          <path d="M22 6 L36 18 L22 38 L8 18 Z" />
+          <path d="M8 18 L22 22 L36 18 M22 22 L22 38" />
+        </g>
+        <g class="glyph-fill" clip-path="url(#clip-geo)" stroke="#FAB632">
+          <path d="M22 6 L36 18 L22 38 L8 18 Z" />
+          <path d="M8 18 L22 22 L36 18 M22 22 L22 38" />
+        </g>
+      </svg>
+
+      <!-- Electro : éclair -->
+      <svg viewBox="0 0 44 44" fill="none" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round">
+        <defs><clipPath id="clip-electro"><rect x="0" y="44" width="44" height="0" /></clipPath></defs>
+        <g class="glyph-base">
+          <path d="M25 5 L13 24 L21 24 L17 39 L31 19 L23 19 Z" />
+        </g>
+        <g class="glyph-fill" clip-path="url(#clip-electro)" stroke="#B08EC1">
+          <path d="M25 5 L13 24 L21 24 L17 39 L31 19 L23 19 Z" />
+        </g>
+      </svg>
+
+      <!-- Dendro : feuille nervurée -->
+      <svg viewBox="0 0 44 44" fill="none" stroke-width="2.2" stroke-linecap="round">
+        <defs><clipPath id="clip-dendro"><rect x="0" y="44" width="44" height="0" /></clipPath></defs>
+        <g class="glyph-base">
+          <path d="M22 39 C10 30 9 16 22 5 C35 16 34 30 22 39 Z" />
+          <path d="M22 12 L22 39 M22 20 L15 15 M22 20 L29 15 M22 29 L14 23 M22 29 L30 23" />
+        </g>
+        <g class="glyph-fill" clip-path="url(#clip-dendro)" stroke="#A5C83B">
+          <path d="M22 39 C10 30 9 16 22 5 C35 16 34 30 22 39 Z" />
+          <path d="M22 12 L22 39 M22 20 L15 15 M22 20 L29 15 M22 29 L14 23 M22 29 L30 23" />
+        </g>
+      </svg>
+
+      <!-- Hydro : goutte -->
+      <svg viewBox="0 0 44 44" fill="none" stroke-width="2.2" stroke-linecap="round">
+        <defs><clipPath id="clip-hydro"><rect x="0" y="44" width="44" height="0" /></clipPath></defs>
+        <g class="glyph-base">
+          <path d="M22 5 C29 15 34 21 34 27 C34 34 29 39 22 39 C15 39 10 34 10 27 C10 21 15 15 22 5 Z" />
+          <path d="M16 27 C16 31 18 34 21 35" />
+        </g>
+        <g class="glyph-fill" clip-path="url(#clip-hydro)" stroke="#4CC2F1">
+          <path d="M22 5 C29 15 34 21 34 27 C34 34 29 39 22 39 C15 39 10 34 10 27 C10 21 15 15 22 5 Z" />
+          <path d="M16 27 C16 31 18 34 21 35" />
+        </g>
+      </svg>
+
+      <!-- Pyro : flamme -->
+      <svg viewBox="0 0 44 44" fill="none" stroke-width="2.2" stroke-linecap="round">
+        <defs><clipPath id="clip-pyro"><rect x="0" y="44" width="44" height="0" /></clipPath></defs>
+        <g class="glyph-base">
+          <path d="M22 39 C14 39 10 33 10 27 C10 20 16 16 17 10 C20 13 21 15 22 18 C25 13 24 9 23 5 C31 10 34 19 34 26 C34 33 30 39 22 39 Z" />
+          <path d="M22 39 C18 36 17 32 19 28 C21 31 24 31 25 28 C27 32 26 36 22 39 Z" />
+        </g>
+        <g class="glyph-fill" clip-path="url(#clip-pyro)" stroke="#EF7938">
+          <path d="M22 39 C14 39 10 33 10 27 C10 20 16 16 17 10 C20 13 21 15 22 18 C25 13 24 9 23 5 C31 10 34 19 34 26 C34 33 30 39 22 39 Z" />
+          <path d="M22 39 C18 36 17 32 19 28 C21 31 24 31 25 28 C27 32 26 36 22 39 Z" />
+        </g>
+      </svg>
+
+      <!-- Cryo : flocon -->
+      <svg viewBox="0 0 44 44" fill="none" stroke-width="2.2" stroke-linecap="round">
+        <defs><clipPath id="clip-cryo"><rect x="0" y="44" width="44" height="0" /></clipPath></defs>
+        <g class="glyph-base">
+          <path d="M22 5 L22 39 M7 13.5 L37 30.5 M37 13.5 L7 30.5" />
+          <path d="M18 8 L22 12 L26 8 M18 36 L22 32 L26 36 M8 19 L13 17 L11 12 M36 25 L31 27 L33 32 M33 12 L31 17 L36 19 M11 32 L13 27 L8 25" />
+        </g>
+        <g class="glyph-fill" clip-path="url(#clip-cryo)" stroke="#9FD6E3">
+          <path d="M22 5 L22 39 M7 13.5 L37 30.5 M37 13.5 L7 30.5" />
+          <path d="M18 8 L22 12 L26 8 M18 36 L22 32 L26 36 M8 19 L13 17 L11 12 M36 25 L31 27 L33 32 M33 12 L31 17 L36 19 M11 32 L13 27 L8 25" />
+        </g>
+      </svg>
+    </div>
+
+    <div class="loading-spinner" aria-hidden="true">
+      <svg viewBox="0 0 34 34" fill="none" stroke="#b9b0a2" stroke-width="1.6" stroke-linecap="round">
+        <path d="M17 3 A14 14 0 0 1 31 17" />
+        <path d="M17 31 A14 14 0 0 1 3 17" />
+        <g class="inner">
+          <path d="M17 9 A8 8 0 0 0 9 17" />
+          <path d="M17 25 A8 8 0 0 0 25 17" />
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
