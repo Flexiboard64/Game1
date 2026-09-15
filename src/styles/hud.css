@@ -1,0 +1,805 @@
+/* HUD — coordonnées de la spec (1920×1080) converties via l'unité --u.
+   Style : flottant sans cadres, cercles et pilules, liserés or fins, ombres douces. */
+
+:root {
+  --u: calc(100vh / 1080);
+  --gold: #D3BC8E;
+  --gold-bright: #e8d5ab;
+  --text: #ECE5D8;
+  --text-white: #FFFFF0;
+  --navy: #3B4255;
+  --pill: rgba(8, 10, 16, 0.3);
+  --anemo: #74C2A8;
+}
+
+#hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  font-family: 'Nunito Sans', sans-serif;
+  color: var(--text);
+  user-select: none;
+}
+
+/* ---------- Voile pointer-lock ---------- */
+#pointer-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 12vh;
+  background: radial-gradient(ellipse at center, rgba(10, 12, 20, 0) 55%, rgba(10, 12, 20, 0.25));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+#pointer-veil.visible { opacity: 1; }
+#pointer-veil span {
+  font-family: 'Nunito Sans', sans-serif;
+  font-size: calc(19 * var(--u));
+  letter-spacing: 0.12em;
+  color: var(--text-white);
+  background: var(--pill);
+  border: 1px solid rgba(211, 188, 142, 0.55);
+  border-radius: 999px;
+  padding: calc(10 * var(--u)) calc(28 * var(--u));
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+/* ---------- Minimap ---------- */
+.minimap {
+  position: absolute;
+  left: calc(40 * var(--u));
+  top: calc(30 * var(--u));
+  width: calc(190 * var(--u));
+  height: calc(190 * var(--u));
+}
+.minimap-clip {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #4d5443;
+  /* Bord fondu : closest-side OBLIGATOIRE (défaut farthest-corner = diagonale
+     du carré → le fondu tomberait au-delà du cercle et le bord serait net).
+     Le mask clippe aussi les box-shadows → la vignette vit sur .minimap-halo */
+  -webkit-mask-image: radial-gradient(circle closest-side, #000 72%, rgba(0, 0, 0, 0.85) 86%, transparent 100%);
+  mask-image: radial-gradient(circle closest-side, #000 72%, rgba(0, 0, 0, 0.85) 86%, transparent 100%);
+}
+/* Hors carte (région neige, M5) : carte givrée — position épinglée au bord */
+.minimap-offmap .minimap-clip {
+  filter: saturate(0.35) brightness(1.12) hue-rotate(-12deg);
+}
+.minimap-offmap .minimap-halo {
+  background: radial-gradient(circle closest-side, transparent 45%, rgba(159, 214, 227, 0.22) 78%, transparent 99%);
+}
+/* Contour blanc fin et discret au bord de la carte (référence Genshin) */
+.minimap-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  pointer-events: none;
+}
+.minimap-halo {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle closest-side, transparent 58%, rgba(0, 0, 0, 0.16) 80%, transparent 99%);
+}
+.minimap-rotator {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 50%;
+}
+.minimap-map {
+  position: absolute;
+  left: 0;
+  top: 0;
+  background-size: 100% 100%;
+  image-rendering: auto;
+  will-change: transform;
+}
+.minimap-cone {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transform-origin: 50% 50%;
+  will-change: transform;
+  /* Même fondu radial que la carte : sans lui, l'arc blanc translucide du cône
+     reste net au-delà du bord fondu et dessine un liseré fantôme */
+  -webkit-mask-image: radial-gradient(circle closest-side, #000 68%, rgba(0, 0, 0, 0.8) 82%, transparent 97%);
+  mask-image: radial-gradient(circle closest-side, #000 68%, rgba(0, 0, 0, 0.8) 82%, transparent 97%);
+}
+.minimap-cone svg { width: 100%; height: 100%; }
+.minimap-arrow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(22 * var(--u));
+  height: calc(22 * var(--u));
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+  will-change: transform;
+}
+.minimap-arrow svg { width: 100%; height: 100%; display: block; }
+.minimap-north {
+  /* Nord FIXE en haut, dans la carte (carte nord-en-haut, style Genshin) */
+  position: absolute;
+  left: 50%;
+  top: calc(8 * var(--u));
+  transform: translateX(-50%);
+  font-family: 'Marcellus', serif;
+  font-size: calc(15 * var(--u));
+  color: var(--text-white);
+  text-shadow: 0 0 6px rgba(0, 0, 0, 0.9), 0 0 3px rgba(0, 0, 0, 1);
+}
+
+/* ---------- Tracker de quête (design référence, police gothique arrondie) ---------- */
+.quest-tracker {
+  position: absolute;
+  left: calc(40 * var(--u));
+  top: calc(238 * var(--u));
+  max-width: calc(460 * var(--u));
+  font-family: 'M PLUS Rounded 1c', 'Nunito Sans', sans-serif;
+}
+/* L'icône EST la bannière (sprite flottant, pas de chip) — référence */
+.quest-banner {
+  width: calc(34 * var(--u));
+  height: calc(46 * var(--u));
+  margin-bottom: calc(12 * var(--u));
+  filter: drop-shadow(0 calc(2 * var(--u)) calc(4 * var(--u)) rgba(0, 0, 0, 0.4));
+}
+.quest-banner img { width: 100%; height: 100%; display: block; object-fit: contain; }
+.quest-objective {
+  display: flex;
+  align-items: center;
+  gap: calc(11 * var(--u));
+  font-size: calc(22 * var(--u));
+  font-weight: 700;
+  color: var(--text-white);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
+}
+/* Gemme cyan peinte (Magnific) — déjà en losange dans le sprite */
+.quest-bullet {
+  flex-shrink: 0;
+  width: calc(20 * var(--u));
+  height: calc(20 * var(--u));
+  object-fit: contain;
+  filter: drop-shadow(0 0 calc(5 * var(--u)) rgba(64, 216, 240, 0.55));
+}
+.quest-distance { color: var(--text-white); font-weight: 700; }
+.quest-action {
+  margin-top: calc(7 * var(--u));
+  margin-left: calc(20 * var(--u));
+  display: flex;
+  align-items: center;
+  gap: calc(9 * var(--u));
+}
+.quest-link {
+  font-size: calc(17 * var(--u));
+  font-weight: 700;
+  color: #6ee6f7;
+  text-decoration: underline;
+  text-underline-offset: calc(2 * var(--u));
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+/* ---------- Chips de touche (style carré blanc arrondi) ---------- */
+.key-chip {
+  min-width: calc(20 * var(--u));
+  padding: calc(2 * var(--u)) calc(5 * var(--u));
+  text-align: center;
+  font-size: calc(12 * var(--u));
+  font-weight: 800;
+  color: var(--navy);
+  background: rgba(255, 255, 250, 0.92);
+  border-radius: calc(5 * var(--u));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  text-shadow: none;
+}
+
+/* ---------- Prompt d'interaction (pilule « F · Muflier », décoratif) ---------- */
+.interact-hint {
+  position: absolute;
+  left: calc(1096 * var(--u));
+  top: calc(520 * var(--u));
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--u));
+  height: calc(30 * var(--u));
+  padding: 0 calc(16 * var(--u)) 0 calc(5 * var(--u));
+  background: rgba(8, 10, 16, 0.5);
+  border-radius: calc(15 * var(--u));
+  opacity: 0;
+  transform: translateY(calc(6 * var(--u)));
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  pointer-events: none;
+}
+.interact-hint.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.interact-hint .key-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(22 * var(--u));
+  font-size: calc(13 * var(--u));
+}
+.interact-label {
+  color: var(--text-white);
+  font-size: calc(15 * var(--u));
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* ---------- Équipe (style référence strict : tête flottante | chip au bord) ---------- */
+.party-slots {
+  position: absolute;
+  top: calc(170 * var(--u));
+  right: calc(10 * var(--u));
+  display: flex;
+  flex-direction: column;
+  gap: calc(28 * var(--u));
+  align-items: flex-end;
+}
+.party-slot {
+  position: relative;
+  z-index: 0; /* contexte d'empilement : le bandeau ::before reste sous la rangée */
+  display: flex;
+  align-items: center;
+  gap: calc(16 * var(--u));
+}
+/* Bandeau sombre en dégradé derrière chaque rangée (référence) : opaque côté
+   bord d'écran, fondu vers la gauche */
+.party-slot::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  right: calc(-10 * var(--u)); /* rejoint le bord de l'écran */
+  top: 50%;
+  transform: translateY(-50%);
+  height: calc(58 * var(--u));
+  width: calc(280 * var(--u));
+  background: linear-gradient(to left, rgba(8, 10, 16, 0.16) 50%, rgba(8, 10, 16, 0) 95%);
+}
+.slot-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* barre de PV alignée au début du nom (référence) */
+  gap: calc(5 * var(--u));
+}
+.slot-hp {
+  width: calc(72 * var(--u));
+  height: calc(4 * var(--u));
+  border-radius: 999px;
+  background: rgba(8, 10, 16, 0.38);
+  overflow: hidden;
+}
+.slot-hp-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(to right, #6fce6f, #a8e87b);
+}
+/* Nom en texte nu avec halo sombre — PAS de pilule (référence) */
+.slot-name {
+  display: flex;
+  align-items: center;
+  gap: calc(7 * var(--u));
+  font-size: calc(16 * var(--u));
+  font-weight: 600;
+  color: var(--text-white);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 10px rgba(0, 0, 0, 0.45);
+  white-space: nowrap;
+}
+.slot-arrow {
+  width: calc(8 * var(--u));
+  height: calc(10 * var(--u));
+}
+.slot-arrow svg { width: 100%; height: 100%; display: block; }
+/* Tête flottante détourée — AUCUN cercle ni bordure (référence) */
+.slot-head {
+  height: calc(72 * var(--u));
+  filter: drop-shadow(0 calc(2 * var(--u)) calc(4 * var(--u)) rgba(0, 0, 0, 0.35));
+}
+.slot-head img { height: 100%; display: block; }
+.party-slot.active .slot-head { height: calc(90 * var(--u)); }
+.slot-head.silhouette {
+  width: calc(56 * var(--u));
+  height: calc(56 * var(--u));
+  color: rgba(10, 14, 22, 0.32);
+  filter: none;
+}
+.slot-head.silhouette svg { width: 100%; height: 100%; display: block; }
+.slot-key { font-size: calc(14 * var(--u)); }
+/* Référence : la chip du membre ACTIF est grisée (on ne peut pas « switcher »
+   vers lui), les autres restent blanches */
+.party-slot.active .slot-key {
+  background: rgba(220, 222, 228, 0.5);
+  color: rgba(43, 48, 63, 0.75);
+}
+
+/* ---------- Boutons compétence / ultime ---------- */
+.skill-buttons { position: absolute; inset: 0; }
+.skill-btn {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(14, 17, 26, 0.34) 62%, rgba(14, 17, 26, 0.46));
+  border: calc(1.5 * var(--u)) solid rgba(236, 229, 216, 0.55);
+  box-shadow: 0 calc(3 * var(--u)) calc(12 * var(--u)) rgba(0, 0, 0, 0.4);
+  /* PAS d'overflow:hidden ici : il rognerait les chips de touche qui débordent
+     sous le cercle — le clip circulaire vit sur .skill-clip */
+}
+.skill-clip {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  overflow: hidden;
+}
+/* Ancrage à DROITE en unités --u (comme la colonne d'équipe) : un ancrage vw
+   décollerait le cluster E/Q sur les ratios non-16:9 et le ferait sortir de
+   l'écran en fenêtre étroite */
+.skill-btn.skill {
+  right: calc(194 * var(--u)); /* 1920 − 1690 − 36 */
+  top: calc(949 * var(--u));
+  width: calc(72 * var(--u));
+  height: calc(72 * var(--u));
+}
+.skill-btn.burst {
+  right: calc(55 * var(--u)); /* 1920 − 1815 − 50 */
+  top: calc(915 * var(--u));
+  width: calc(100 * var(--u));
+  height: calc(100 * var(--u));
+}
+.skill-btn.jump {
+  right: calc(286 * var(--u)); /* centre aligné avec E (y = 985) */
+  top: calc(953 * var(--u));
+  width: calc(64 * var(--u));
+  height: calc(64 * var(--u));
+}
+.skill-btn.jump-flash { animation: ready-flash 0.3s ease-out; }
+.skill-glyph {
+  position: absolute;
+  inset: 16%;
+  color: var(--text-white);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+.skill-glyph svg { width: 100%; height: 100%; display: block; }
+.cooldown-ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: scaleX(-1); /* balayage horaire */
+}
+.cooldown-seconds {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(19 * var(--u));
+  font-weight: 700;
+  color: var(--text-white);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+/* Le look vit dans .key-chip — ici uniquement le positionnement sous le bouton */
+.keycap {
+  position: absolute;
+  bottom: calc(-4 * var(--u));
+  left: 50%;
+  transform: translateX(-50%);
+}
+.burst-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0%;
+  background: linear-gradient(to top, var(--element), color-mix(in srgb, var(--element) 65%, white));
+  opacity: 0.82;
+  transition: height 0.2s linear;
+}
+.skill-btn.burst.full { animation: burst-pulse 1.6s ease-in-out infinite; }
+.skill-btn.burst.full .burst-fill { opacity: 0.95; }
+@keyframes burst-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 calc(10 * var(--u)) rgba(116, 194, 168, 0.4); }
+  50% { transform: scale(1.05); box-shadow: 0 0 calc(22 * var(--u)) rgba(116, 194, 168, 0.75); }
+}
+.skill-btn.burst-flash { animation: burst-flash 0.4s ease-out; }
+@keyframes burst-flash {
+  0% { box-shadow: 0 0 calc(40 * var(--u)) rgba(255, 255, 240, 0.95); transform: scale(1.12); }
+  100% { box-shadow: none; transform: scale(1); }
+}
+.skill-btn.ready-flash { animation: ready-flash 0.3s ease-out; }
+@keyframes ready-flash {
+  0% { box-shadow: 0 0 calc(24 * var(--u)) rgba(255, 255, 240, 0.9); }
+  100% { box-shadow: 0 calc(3 * var(--u)) calc(12 * var(--u)) rgba(0, 0, 0, 0.4); }
+}
+
+/* ---------- Barre de menu (haut-droite, décorative) ---------- */
+.menu-bar {
+  position: absolute;
+  top: calc(20 * var(--u));
+  right: calc(36 * var(--u));
+  display: flex;
+  align-items: center;
+  gap: calc(26 * var(--u));
+}
+.menu-icon {
+  position: relative;
+  width: calc(58 * var(--u));
+  height: calc(58 * var(--u));
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.28));
+}
+.menu-icon img { width: 100%; height: 100%; display: block; object-fit: contain; }
+.menu-icon.has-badge::after {
+  content: '';
+  position: absolute;
+  top: calc(-2 * var(--u));
+  right: calc(-2 * var(--u));
+  width: calc(13 * var(--u));
+  height: calc(13 * var(--u));
+  border-radius: 50%;
+  background: #e5484d;
+  border: calc(1.5 * var(--u)) solid rgba(255, 255, 250, 0.9);
+  box-shadow: 0 0 calc(3 * var(--u)) rgba(0, 0, 0, 0.4);
+}
+/* Pilule de latence sous l'icône de profil (comme la référence) */
+.menu-ping {
+  position: absolute;
+  top: calc(100% + 8 * var(--u));
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: calc(6 * var(--u));
+  font-size: calc(13 * var(--u));
+  font-weight: 700;
+  color: #6fe26f;
+  background: var(--pill);
+  border-radius: 999px;
+  padding: calc(3 * var(--u)) calc(12 * var(--u));
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+.menu-ping svg { width: calc(14 * var(--u)); height: calc(12 * var(--u)); }
+
+/* ---------- Indication de chat (bas-gauche, décorative) ---------- */
+.chat-hint {
+  position: absolute;
+  left: calc(40 * var(--u));
+  bottom: calc(26 * var(--u));
+  display: flex;
+  align-items: stretch;
+  gap: calc(6 * var(--u));
+}
+.chat-hint .key-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(24 * var(--u));
+  font-size: calc(14 * var(--u));
+  padding: 0 calc(8 * var(--u));
+}
+.chat-chip svg {
+  width: calc(16 * var(--u));
+  height: calc(14 * var(--u));
+  display: block;
+}
+
+/* ---------- Jauge d'endurance ---------- */
+.stamina-wheel {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 76px;
+  height: 76px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  will-change: transform;
+}
+.stamina-wheel.visible { opacity: 1; }
+.stamina-wheel svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5)); }
+
+/* ---------- Carte de région ---------- */
+.region-title {
+  position: absolute;
+  left: 50%;
+  top: calc(270 * var(--u));
+  transform: translateX(-50%) scale(0.96);
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.region-title.show { opacity: 1; transform: translateX(-50%) scale(1); }
+.region-title.hide { opacity: 0; transition: opacity 0.8s ease; }
+.region-rule {
+  width: calc(300 * var(--u));
+  height: 1px;
+  margin: calc(10 * var(--u)) auto;
+  background: linear-gradient(to right, transparent, var(--gold) 30%, var(--gold) 70%, transparent);
+}
+.region-name {
+  font-family: 'Marcellus', serif;
+  font-size: calc(46 * var(--u));
+  letter-spacing: 0.1em;
+  color: var(--text);
+  text-shadow: 0 0 calc(18 * var(--u)) rgba(255, 250, 230, 0.35), 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+.region-sub {
+  font-size: calc(16 * var(--u));
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-top: calc(2 * var(--u));
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+/* ============================= Combat (M4) ============================= */
+
+/* Barres de PV des golems — ancrées monde (pool recyclé) */
+.enemy-hp {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: calc(96 * var(--u));
+  height: calc(8 * var(--u));
+  border-radius: 999px;
+  background: rgba(8, 10, 16, 0.55);
+  border: calc(1 * var(--u)) solid rgba(236, 229, 216, 0.25);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  will-change: transform;
+  overflow: hidden;
+}
+.enemy-hp.visible { opacity: 1; }
+.enemy-hp-fill {
+  height: 100%;
+  background: linear-gradient(to right, #ffd98a, #ff9a5a);
+  border-radius: 999px;
+  transition: width 0.12s ease-out;
+}
+
+/* Nombres de dégâts flottants */
+.dmg-number {
+  position: fixed;
+  left: 0;
+  top: 0;
+  font-weight: 800;
+  font-size: calc(21 * var(--u));
+  color: #ffffff;
+  text-shadow:
+    0 0 calc(6 * var(--u)) rgba(8, 10, 16, 0.85),
+    0 calc(2 * var(--u)) calc(3 * var(--u)) rgba(8, 10, 16, 0.7);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+.dmg-number.visible { opacity: 1; }
+.dmg-number.crit {
+  font-size: calc(30 * var(--u));
+  color: #ffd257;
+}
+.dmg-number.anemo { color: var(--anemo); }
+.dmg-number.player { color: #ff6b6b; }
+
+/* Flash du slot d'équipe au coup reçu + barre de PV basse */
+.party-slot.hurt-flash .slot-head { filter: brightness(1.9) saturate(0.4); }
+.slot-hp-fill { transition: width 0.18s ease; }
+.slot-hp-fill.low { background: linear-gradient(to right, #e5484d, #ff8a5a); }
+
+/* Voile de mort — séparé du #pointer-veil (cycle du pointer lock) */
+#death-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: #05070c;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#death-veil.visible { opacity: 1; }
+#death-veil span {
+  font-family: 'Nunito Sans', sans-serif;
+  font-size: calc(34 * var(--u));
+  font-weight: 700;
+  letter-spacing: calc(3 * var(--u));
+  color: var(--gold);
+  text-shadow: 0 0 calc(18 * var(--u)) rgba(211, 188, 142, 0.35);
+}
+
+/* Vignette rouge de dégâts (overlay DOM : survit à ?nopost et aux replis) */
+#damage-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(190, 30, 30, 0) 52%, rgba(190, 30, 30, 0.48));
+  opacity: 0;
+  transition: opacity 0.45s ease;
+}
+#damage-vignette.hurt {
+  opacity: 1;
+  transition: opacity 0.06s ease;
+}
+#damage-vignette.low-hp {
+  animation: vignette-pulse 1.6s ease-in-out infinite;
+}
+@keyframes vignette-pulse {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 0.55; }
+}
+
+/* ---- M6 : jauge de froid mordant + vignette givre ---- */
+.cold-gauge {
+  position: absolute;
+  left: 50%;
+  bottom: calc(120 * var(--u));
+  width: calc(64 * var(--u));
+  height: calc(64 * var(--u));
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+.cold-gauge.visible { opacity: 1; }
+.cold-gauge .cold-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(rgba(159, 214, 227, 0.95) 0deg, rgba(20, 35, 63, 0.55) 0deg);
+  -webkit-mask: radial-gradient(circle closest-side, transparent 68%, #fff 70%);
+  mask: radial-gradient(circle closest-side, transparent 68%, #fff 70%);
+  filter: drop-shadow(0 0 calc(6 * var(--u)) rgba(120, 190, 220, 0.5));
+}
+.cold-gauge .cold-flake {
+  position: absolute;
+  inset: 22%;
+  color: #cfeaf6;
+  filter: drop-shadow(0 0 calc(4 * var(--u)) rgba(120, 190, 220, 0.8));
+}
+.cold-gauge.warn { animation: cold-pulse 0.9s ease-in-out infinite; }
+@keyframes cold-pulse {
+  0%, 100% { transform: translateX(-50%) scale(1); }
+  50% { transform: translateX(-50%) scale(1.12); }
+}
+.frost-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  box-shadow: inset 0 0 calc(220 * var(--u)) calc(60 * var(--u)) rgba(140, 200, 230, 0.55);
+}
+
+/* ---- M6 : barre de boss ---- */
+.boss-bar {
+  position: absolute;
+  top: calc(64 * var(--u));
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(560 * var(--u));
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+  text-align: center;
+}
+.boss-bar.visible { opacity: 1; }
+.boss-bar .boss-name {
+  font-family: 'M PLUS Rounded 1c', sans-serif;
+  font-weight: 700;
+  font-size: calc(22 * var(--u));
+  color: #f2ede2;
+  text-shadow: 0 calc(2 * var(--u)) calc(8 * var(--u)) rgba(10, 14, 24, 0.9);
+  margin-bottom: calc(6 * var(--u));
+}
+.boss-bar .boss-track {
+  height: calc(9 * var(--u));
+  border-radius: calc(5 * var(--u));
+  background: rgba(12, 16, 28, 0.65);
+  border: 1px solid rgba(242, 237, 226, 0.35);
+  overflow: hidden;
+}
+.boss-bar .boss-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #d8b23c, #f0d878);
+  transition: width 0.15s linear;
+}
+.boss-bar.shielded .boss-fill { background: linear-gradient(90deg, #6fb6d8, #9fd6e3); }
+.boss-bar.phase-pulse { animation: boss-phase 0.6s ease; }
+@keyframes boss-phase {
+  0% { transform: translateX(-50%) scale(1); }
+  40% { transform: translateX(-50%) scale(1.06); }
+  100% { transform: translateX(-50%) scale(1); }
+}
+
+/* ---- M7 : dialogue façon Genshin ---- */
+.dialogue {
+  position: absolute;
+  left: 50%;
+  bottom: calc(64 * var(--u));
+  transform: translateX(-50%);
+  width: calc(980 * var(--u));
+  padding: calc(20 * var(--u)) calc(36 * var(--u)) calc(16 * var(--u));
+  background: linear-gradient(180deg, rgba(20, 24, 38, 0.88), rgba(14, 17, 28, 0.92));
+  border: 1px solid rgba(211, 188, 142, 0.4);
+  border-radius: calc(10 * var(--u));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  font-family: 'M PLUS Rounded 1c', sans-serif;
+}
+.dialogue.visible { opacity: 1; }
+.dialogue-name {
+  color: #d3bc8e;
+  font-weight: 700;
+  font-size: calc(22 * var(--u));
+  margin-bottom: calc(6 * var(--u));
+}
+.dialogue-text {
+  color: #ece5d8;
+  font-size: calc(19 * var(--u));
+  line-height: 1.5;
+  min-height: calc(56 * var(--u));
+}
+.dialogue-next {
+  position: absolute;
+  right: calc(22 * var(--u));
+  bottom: calc(10 * var(--u));
+  color: rgba(236, 229, 216, 0.75);
+  font-size: calc(14 * var(--u));
+  animation: dialogue-bob 1.2s ease-in-out infinite;
+  display: flex;
+  align-items: center;
+  gap: calc(6 * var(--u));
+}
+@keyframes dialogue-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(calc(3 * var(--u))); }
+}
+
+/* ---- Choix de dialogue (M7.3, signature Genshin) : pile à droite au-dessus du bandeau ---- */
+.dialogue-choices {
+  position: absolute;
+  right: calc(30 * var(--u));
+  bottom: calc(110% + 8 * var(--u));
+  display: none;
+  flex-direction: column;
+  gap: calc(10 * var(--u));
+}
+.dialogue-choices.visible { display: flex; }
+.dialogue-choice {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--u));
+  padding: calc(10 * var(--u)) calc(18 * var(--u));
+  background: rgba(236, 242, 248, 0.92);
+  color: #3b4252;
+  border-radius: calc(22 * var(--u));
+  font-size: calc(17 * var(--u));
+  font-weight: 600;
+  box-shadow: 0 calc(2 * var(--u)) calc(8 * var(--u)) rgba(0, 0, 0, 0.35);
+}
+.dialogue-choice .key-chip { flex: none; }
+
+/* ---- Chrono du défi des vents (M7.3) : bandeau haut-centre ---- */
+.trial-timer {
+  position: absolute;
+  top: calc(120 * var(--u));
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: calc(34 * var(--u));
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.06em;
+  text-shadow: 0 0 calc(10 * var(--u)) rgba(120, 200, 255, 0.9), 0 calc(2 * var(--u)) calc(6 * var(--u)) rgba(0, 0, 0, 0.6);
+  display: none;
+}
+.trial-timer.visible { display: block; }
